@@ -7,11 +7,15 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using HealthAPI.Data;
 using HealthAPI.Models;
+using Microsoft.AspNetCore.Cors;
+using Microsoft.AspNetCore.Authorization;
 
 namespace HealthAPI.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
+    [EnableCors("HealthPolicy")]
     public class ObservationController : ControllerBase
     {
         private readonly HealthContext _context;
@@ -21,100 +25,49 @@ namespace HealthAPI.Controllers
             _context = context;
         }
 
+        // Get all the observations
         // GET: api/Observation
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Observation>>> GetObservations()
         {
-            return await _context.Observations.ToListAsync();
+            return await _context.Observations
+                .Include(o => o.observedItems).ThenInclude(bp => bp.bloodPressures)
+                .Include(o => o.observedItems).ThenInclude(bh => bh.bodyHeats)
+                .Include(o => o.observedItems).ThenInclude(rr => rr.respiratoryRates)
+                .Include(o => o.observedItems).ThenInclude(sr => sr.sinusRhythms)
+                .ToListAsync();
         }
 
-        // GET: api/Observation/5
+        // Get a certain observation by Id
+        // GET: api/Observation/id
         [HttpGet("{id}")]
-        public async Task<ActionResult<Observation>> GetObservation(string id)
+        public async Task<List<Observation>> GetObservation(string id)
         {
-            var observation = await _context.Observations.FindAsync(id);
+            var observation = await _context.Observations
+                .Include(o => o.observedItems).ThenInclude(bp => bp.bloodPressures)
+                .Include(o => o.observedItems).ThenInclude(bh => bh.bodyHeats)
+                .Include(o => o.observedItems).ThenInclude(rr => rr.respiratoryRates)
+                .Include(o => o.observedItems).ThenInclude(sr => sr.sinusRhythms)
+                .Where(ob => ob.ObservationId == id).ToListAsync();
 
-            if (observation == null)
-            {
-                return NotFound();
-            }
 
             return observation;
         }
 
-        // PUT: api/Observation/5
-        // To protect from overposting attacks, please enable the specific properties you want to bind to, for
-        // more details see https://aka.ms/RazorPagesCRUD.
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutObservation(string id, Observation observation)
+        // Get all the observations of a patient by patientId
+        // GET: api/Observation/Patient/patientId
+        [HttpGet("Patient/{patientId}")]
+        public async Task<List<Observation>> GetAppointmentByPatient(string patientId)
         {
-            if (id != observation.ObservationId)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(observation).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!ObservationExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
+            return await _context.Observations
+                .Include(o => o.observedItems).ThenInclude(bp => bp.bloodPressures)
+                .Include(o => o.observedItems).ThenInclude(bh => bh.bodyHeats)
+                .Include(o => o.observedItems).ThenInclude(rr => rr.respiratoryRates)
+                .Include(o => o.observedItems).ThenInclude(sr => sr.sinusRhythms)
+                .Where(p => p.PatientId == patientId).ToListAsync();
         }
 
-        // POST: api/Observation
-        // To protect from overposting attacks, please enable the specific properties you want to bind to, for
-        // more details see https://aka.ms/RazorPagesCRUD.
-        [HttpPost]
-        public async Task<ActionResult<Observation>> PostObservation(Observation observation)
-        {
-            _context.Observations.Add(observation);
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateException)
-            {
-                if (ObservationExists(observation.ObservationId))
-                {
-                    return Conflict();
-                }
-                else
-                {
-                    throw;
-                }
-            }
 
-            return CreatedAtAction("GetObservation", new { id = observation.ObservationId }, observation);
-        }
-
-        // DELETE: api/Observation/5
-        [HttpDelete("{id}")]
-        public async Task<ActionResult<Observation>> DeleteObservation(string id)
-        {
-            var observation = await _context.Observations.FindAsync(id);
-            if (observation == null)
-            {
-                return NotFound();
-            }
-
-            _context.Observations.Remove(observation);
-            await _context.SaveChangesAsync();
-
-            return observation;
-        }
 
         private bool ObservationExists(string id)
         {

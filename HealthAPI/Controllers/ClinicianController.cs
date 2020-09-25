@@ -7,8 +7,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using HealthAPI.Data;
 using HealthAPI.Models;
-using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Cors;
 
 namespace HealthAPI.Controllers
 {
@@ -16,58 +16,57 @@ namespace HealthAPI.Controllers
     [Route("api/[controller]")]
     [ApiController]
     [EnableCors("HealthPolicy")]
-    public class PatientController : ControllerBase
+    public class ClinicianController : ControllerBase
     {
         private readonly HealthContext _context;
 
-        public PatientController(HealthContext context)
+        public ClinicianController(HealthContext context)
         {
             _context = context;
         }
 
-        // Get all patients
-        // GET: api/Patient
+        // GET: api/Clinician
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Patient>>> GetPatients()
+        public async Task<ActionResult<IEnumerable<Clinician>>> GetClinicians()
         {
-            return await _context.Patients.ToListAsync();
+            return await _context.Clinicians.ToListAsync();
         }
 
-        // Get patient by Id
-        // GET: api/Patient/5
+        // GET: api/Clinician/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Object>> GetPatient(string id)
+        public async Task<ActionResult<Clinician>> GetClinician(string id)
         {
-            var patient = await _context.Patients.FindAsync(id);
+            var clinician = await _context.Clinicians.FindAsync(id);
 
-            if (patient == null)
+            if (clinician == null)
             {
-
-                var defaultPatient = new Patient
-                {
-                    PatientId = "DefaultPatient",
-                    ImgUrl = "https://diagnotifyimages.blob.core.windows.net/diagnotify-container/avatarDefault.png"
-                };
-
-                return defaultPatient;
-                //return NotFound();
+                return NotFound();
             }
 
-            return patient;
+            return clinician;
         }
 
-        // PUT: api/Patient/5
+        // GET: api/Clinician/Email/5
+        [HttpGet("Email/{email}")]
+        public async Task<List<Clinician>> GetCliniciansByEmail(string email)
+        {
+            return await _context.Clinicians
+                .Where(c => c.Email == email).ToListAsync();
+        }
+
+
+        // PUT: api/Clinician/5
         // To protect from overposting attacks, please enable the specific properties you want to bind to, for
         // more details see https://aka.ms/RazorPagesCRUD.
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutPatient(string id, Patient patient)
+        public async Task<IActionResult> PutClinician(string id, Clinician clinician)
         {
-            if (id != patient.PatientId)
+            if (id != clinician.ClinicianId)
             {
                 return BadRequest();
             }
 
-            _context.Entry(patient).State = EntityState.Modified;
+            _context.Entry(clinician).State = EntityState.Modified;
 
             try
             {
@@ -75,7 +74,7 @@ namespace HealthAPI.Controllers
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!PatientExists(id))
+                if (!ClinicianExists(id))
                 {
                     return NotFound();
                 }
@@ -88,20 +87,20 @@ namespace HealthAPI.Controllers
             return NoContent();
         }
 
-        // POST: api/Patient
+        // POST: api/Clinician
         // To protect from overposting attacks, please enable the specific properties you want to bind to, for
         // more details see https://aka.ms/RazorPagesCRUD.
         [HttpPost]
-        public async Task<ActionResult<Patient>> PostPatient(Patient patient)
+        public async Task<ActionResult<Clinician>> PostClinician(Clinician clinician)
         {
-            _context.Patients.Add(patient);
+            _context.Clinicians.Add(clinician);
             try
             {
                 await _context.SaveChangesAsync();
             }
             catch (DbUpdateException)
             {
-                if (PatientExists(patient.PatientId))
+                if (ClinicianExists(clinician.ClinicianId))
                 {
                     return Conflict();
                 }
@@ -111,28 +110,28 @@ namespace HealthAPI.Controllers
                 }
             }
 
-            return CreatedAtAction("GetPatient", new { id = patient.PatientId }, patient);
+            return CreatedAtAction("GetClinician", new { id = clinician.ClinicianId }, clinician);
         }
 
-        // DELETE: api/Patient/5
+        // DELETE: api/Clinician/5
         [HttpDelete("{id}")]
-        public async Task<ActionResult<Patient>> DeletePatient(string id)
+        public async Task<ActionResult<Clinician>> DeleteClinician(string id)
         {
-            var patient = await _context.Patients.FindAsync(id);
-            if (patient == null)
+            var clinician = await _context.Clinicians.FindAsync(id);
+            if (clinician == null)
             {
                 return NotFound();
             }
 
-            _context.Patients.Remove(patient);
+            _context.Clinicians.Remove(clinician);
             await _context.SaveChangesAsync();
 
-            return patient;
+            return clinician;
         }
 
-        private bool PatientExists(string id)
+        private bool ClinicianExists(string id)
         {
-            return _context.Patients.Any(e => e.PatientId == id);
+            return _context.Clinicians.Any(e => e.ClinicianId == id);
         }
     }
 }

@@ -7,11 +7,15 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using HealthAPI.Data;
 using HealthAPI.Models;
+using Microsoft.AspNetCore.Cors;
+using Microsoft.AspNetCore.Authorization;
 
 namespace HealthAPI.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
+    [EnableCors("HealthPolicy")]
     public class ReportController : ControllerBase
     {
         private readonly HealthContext _context;
@@ -40,6 +44,25 @@ namespace HealthAPI.Controllers
             }
 
             return report;
+        }
+
+        // Get all reports of a patient by id
+        // GET: api/Report/Patient/patientId
+        [HttpGet("Patient/{patientId}")]
+        public ActionResult<Object> GetReportsByPatient(string patientId)
+        {
+            var reports = _context.Reports
+                .Include(i => i.Images)
+                .Include(d => d.Diagnoses)
+                .Include(m => m.Medications).ThenInclude(md => md.Medicines)
+                .Where(p => p.PatientId == patientId).ToList();
+
+            if (reports == null)
+            {
+                return NotFound();
+            }
+
+            return reports;
         }
 
         // PUT: api/Report/5

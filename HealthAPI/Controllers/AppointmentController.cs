@@ -7,11 +7,15 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using HealthAPI.Data;
 using HealthAPI.Models;
+using Microsoft.AspNetCore.Cors;
+using Microsoft.AspNetCore.Authorization;
 
 namespace HealthAPI.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
+    [EnableCors("HealthPolicy")]
     public class AppointmentController : ControllerBase
     {
         private readonly HealthContext _context;
@@ -21,6 +25,7 @@ namespace HealthAPI.Controllers
             _context = context;
         }
 
+        // Get all appointments
         // GET: api/Appointment
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Appointment>>> GetAppointments()
@@ -28,7 +33,8 @@ namespace HealthAPI.Controllers
             return await _context.Appointments.ToListAsync();
         }
 
-        // GET: api/Appointment/5
+        // Get certain appointment by ID
+        // GET: api/Appointment/Id
         [HttpGet("{id}")]
         public async Task<ActionResult<Appointment>> GetAppointment(string id)
         {
@@ -42,79 +48,15 @@ namespace HealthAPI.Controllers
             return appointment;
         }
 
-        // PUT: api/Appointment/5
-        // To protect from overposting attacks, please enable the specific properties you want to bind to, for
-        // more details see https://aka.ms/RazorPagesCRUD.
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutAppointment(string id, Appointment appointment)
+        // Get all appointments by patientId
+        // GET: api/Appointment/Patient/patientId
+        [HttpGet("Patient/{patientId}")]
+        public async Task<List<Appointment>> GetAppointmentByPatient(string patientId)
         {
-            if (id != appointment.AppointmentId)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(appointment).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!AppointmentExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
+            return await _context.Appointments
+                .Where(p => p.PatientId == patientId).ToListAsync();
         }
 
-        // POST: api/Appointment
-        // To protect from overposting attacks, please enable the specific properties you want to bind to, for
-        // more details see https://aka.ms/RazorPagesCRUD.
-        [HttpPost]
-        public async Task<ActionResult<Appointment>> PostAppointment(Appointment appointment)
-        {
-            _context.Appointments.Add(appointment);
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateException)
-            {
-                if (AppointmentExists(appointment.AppointmentId))
-                {
-                    return Conflict();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return CreatedAtAction("GetAppointment", new { id = appointment.AppointmentId }, appointment);
-        }
-
-        // DELETE: api/Appointment/5
-        [HttpDelete("{id}")]
-        public async Task<ActionResult<Appointment>> DeleteAppointment(string id)
-        {
-            var appointment = await _context.Appointments.FindAsync(id);
-            if (appointment == null)
-            {
-                return NotFound();
-            }
-
-            _context.Appointments.Remove(appointment);
-            await _context.SaveChangesAsync();
-
-            return appointment;
-        }
 
         private bool AppointmentExists(string id)
         {
